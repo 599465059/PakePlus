@@ -1,0 +1,458 @@
+/* 测试软件平台 - 蓝白色调 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-size: 14px;
+  color: #333;
+  background: #f5f7fa;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* 应用容器 */
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+/* 头部 */
+.app-header {
+  height: 50px;
+  background: white;
+  border-bottom: 1px solid #dce5ec;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.wifi-icon {
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+
+.wifi-icon:hover {
+  background: #f0f4f8;
+}
+
+.logo {
+  font-size: 16px;
+  font-weight: 600;
+  color: #2c8fbb;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* 页面标签 */
+.page-tabs {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+  overflow-x: auto;
+}
+
+.page-tab {
+  padding: 6px 14px;
+  background: #f0f4f8;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.page-tab:hover {
+  background: #e0e8f0;
+}
+
+.page-tab.active {
+  background: #2c8fbb;
+  color: white;
+}
+
+/* 主内容区 */
+.main-content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* 左侧菜单 */
+.sidebar {
+  width: 180px;
+  background: white;
+  border-right: 1px solid #dce5ec;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+.menu-group {
+  border-bottom: 1px solid #eef2f8;
+}
+
+.menu-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.menu-header:hover {
+  background: #f8fafc;
+}
+
+.menu-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.menu-icon {
+  font-size: 16px;
+}
+
+.menu-arrow {
+  font-size: 10px;
+  color: #94a3b8;
+  transition: transform 0.2s;
+}
+
+.menu-group.open .menu-arrow {
+  transform: rotate(90deg);
+}
+
+.menu-items {
+  display: none;
+}
+
+.menu-group.open .menu-items {
+  display: block;
+}
+
+.menu-item {
+  padding: 10px 14px 10px 38px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #5a6a7a;
+  transition: all 0.2s;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.menu-item-icon {
+  font-size: 14px;
+  width: 18px;
+  text-align: center;
+}
+
+.menu-item-text {
+  flex: 1;
+}
+
+.menu-item:hover {
+  background: #f0f7fc;
+  color: #2c8fbb;
+}
+
+.menu-item.active {
+  background: #e8f4fc;
+  color: #2c8fbb;
+  border-left: 3px solid #2c8fbb;
+}
+
+/* 主区域 */
+.main-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* 内容显示区 */
+.canvas {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  background: #f8fafc;
+}
+
+.canvas-empty {
+  text-align: center;
+  color: #94a3b8;
+  padding: 60px 20px;
+  font-size: 14px;
+}
+
+/* 70/30 分栏 */
+.panel-split {
+  display: flex;
+  gap: 16px;
+  height: 100%;
+}
+
+.canvas-split-left {
+  flex: 7;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.canvas-split-right {
+  flex: 3;
+  min-width: 0;
+  background: white;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.panel-title {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: #2c3e50;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eef2f8;
+}
+
+/* 控件网格 */
+.controls-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.control-item {
+  width: calc(25% - 9px);
+  min-height: 140px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  border: 1px solid #e2edf2;
+  overflow: hidden;
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+}
+
+.control-item:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.control-item .content {
+  padding: 16px;
+  min-height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 控件列表项 */
+.control-list-item {
+  padding: 12px;
+  border-bottom: 1px solid #eef2f8;
+}
+
+.control-list-item:last-child {
+  border-bottom: none;
+}
+
+.control-list-item .name {
+  font-weight: 500;
+  color: #2c3e50;
+  margin-bottom: 4px;
+}
+
+.control-list-item .type {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+/* 控件列表项选中 */
+.control-list-item.active {
+  background: #e8f4fc;
+  border-left: 3px solid #2c8fbb;
+}
+
+.control-list-item {
+  cursor: pointer;
+}
+
+.control-list-item:hover {
+  background: #f8fafc;
+}
+
+/* 表单样式 */
+.form-field {
+  margin-bottom: 14px;
+}
+
+.form-field label {
+  display: block;
+  font-size: 13px;
+  color: #5a6a7a;
+  margin-bottom: 6px;
+}
+
+.form-field input,
+.form-field select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #dce5ec;
+  border-radius: 6px;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.form-field input:focus,
+.form-field select:focus {
+  border-color: #2c8fbb;
+}
+
+/* 按钮 */
+button {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-primary {
+  background: #2c8fbb;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #247299;
+}
+
+.btn-danger {
+  background: #dc3545;
+  color: white;
+}
+
+.btn-danger:hover {
+  background: #c82333;
+}
+
+/* 右键菜单 */
+.context-menu {
+  display: none;
+  position: fixed;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  padding: 6px 0;
+  min-width: 140px;
+  z-index: 1000;
+}
+
+.context-menu-item {
+  padding: 8px 16px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.context-menu-item:hover {
+  background: #f0f7fc;
+}
+
+.context-menu-separator {
+  height: 1px;
+  background: #eef2f8;
+  margin: 4px 0;
+}
+
+/* 空状态 */
+.empty-tip {
+  text-align: center;
+  color: #94a3b8;
+  padding: 30px 20px;
+  font-size: 13px;
+}
+
+/* 信息文本 */
+.info-text {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 8px;
+}
+
+/* 滚动条 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #dce5ec;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #b8c5d3;
+}
+
+/* 三分布局 */
+.panel-split-three {
+  display: flex;
+  gap: 16px;
+  height: 100%;
+}
+
+.split-section {
+  flex: 1;
+  min-width: 0;
+  background: white;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  overflow-y: auto;
+}
+
+/* 配置列表选中状态 */
+.config-list .control-list-item.active {
+  background: #e8f4fc;
+  border-left: 3px solid #2c8fbb;
+}
+
+/* 数据面板滚动条 */
+.data-panel::-webkit-scrollbar {
+  width: 6px;
+}
+
+.data-panel::-webkit-scrollbar-track {
+  background: #2d2d2d;
+  border-radius: 3px;
+}
+
+.data-panel::-webkit-scrollbar-thumb {
+  background: #555;
+  border-radius: 3px;
+}
+
+.data-panel::-webkit-scrollbar-thumb:hover {
+  background: #666;
+}
