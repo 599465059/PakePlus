@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>测试软件平台</title>
+  <link rel="stylesheet" href="css/main.css">
+  <script src="js/storage.js" onerror="console.error('Failed to load: storage.js')"></script>
+  <script src="js/eventBus.js" onerror="console.error('Failed to load: eventBus.js')"></script>
+  <script src="js/dataParser.js" onerror="console.error('Failed to load: dataParser.js')"></script>
+  <script src="js/device.js" onerror="console.error('Failed to load: device.js')"></script>
+  <script src="js/controls.js" onerror="console.error('Failed to load: controls.js')"></script>
+  <script src="js/app.js" onerror="console.error('Failed to load: app.js')"></script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- 头部 -->
+    <header class="app-header">
+      <div class="wifi-icon" id="wifiIcon" title="点击连接/断开">
+        <svg viewBox="0 0 24 24" width="24" height="24">
+          <path id="wifiPath" fill="#dc3545" d="M12 18c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2zm0-6c3.31 0 6 2.69 6 6h-2c0-2.21-1.79-4-4-4s-4 1.79-4 4H6c0-3.31 2.69-6 6-6zm0-4c4.97 0 9 4.03 9 9h-2c0-3.87-3.13-7-7-7s-7 3.13-7 7H3c0-4.97 4.03-9 9-9z"/>
+        </svg>
+      </div>
+      <div class="logo" id="appTitle">⚙️ 测试软件平台</div>
+      <div class="page-tabs" id="pageTabs"></div>
+    </header>
+
+    <div class="main-content">
+      <!-- 左侧菜单 -->
+      <aside class="sidebar" id="sidebar">
+        <div class="menu-list" id="menuList"></div>
+      </aside>
+
+      <!-- 主内容区 -->
+      <main class="main-area">
+        <div class="canvas" id="canvasArea">
+          <div class="canvas-empty">请在左侧选择控件添加到画布</div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- 右键菜单 -->
+  <div class="context-menu" id="contextMenu"></div>
+
+  <!-- 文件上传 -->
+  <input type="file" id="fileImportInput" accept=".js,.json" style="display:none;">
+
+  <script>
+    window.addEventListener('DOMContentLoaded', function() {
+      App.init()
+    })
+  </script>
+</body>
+</html>
