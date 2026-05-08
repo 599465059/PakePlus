@@ -60,39 +60,12 @@
 
       // 监听设备数据事件，实现实时更新
       if (window.EventBus) {
-        EventBus.on('device:data', (data) => {
-          // 更新数据查看面板
+        EventBus.on('device:data', () => {
           if (this.currentMenu === '数据查看') {
             this.updateLabviewDataPanel()
           }
-          // 更新页面上的控件显示
-          if (data && data.channel) {
-            this.updateControlFromDevice(data.channel, data.value)
-          }
         })
       }
-    }
-
-    // 从设备更新控件显示
-    updateControlFromDevice(channel, value) {
-      const page = this.getCurrentPage()
-      if (!page || !page.controls) return
-
-      page.controls.forEach(ctrl => {
-        if (ctrl.config && ctrl.config.channel === channel) {
-          const def = this.controls.get(ctrl.controlType)
-          if (def && def.updateFromDevice) {
-            const content = document.querySelector(`[data-control-id="${ctrl.id}"] .content`)
-            if (content) {
-              try {
-                def.updateFromDevice(content, value, ctrl.config)
-              } catch (e) {
-                console.error('Update control error:', e)
-              }
-            }
-          }
-        }
-      })
     }
 
     // 加载配置
@@ -100,7 +73,7 @@
       const config = Storage.load('fullConfig', null)
       if (config) {
         this.pages = config.pages || []
-        this.currentPageId = config.currentPageId || (this.pages[0] ? this.pages[0].id : null)
+        this.currentPageId = config.currentPageId || this.pages[0]?.id
         // 强制使用新版菜单配置
         this.menuConfig = defaultMenuConfig
       }
@@ -324,13 +297,12 @@
     renderAddControl() {
       const ctrls = this.controls.getAll()
       console.log('renderAddControl - ctrls:', ctrls)
-
       return `
         <div class="panel-split">
           <div class="canvas-split-left">
-            <div class="panel-title">🎨 当前页面控件（点击修改）</div>
+            <div class="panel-title">🎨 当前页面控件</div>
             <div class="controls-grid" id="pageControlsGrid">
-              ${this.renderPageControls(true)}
+              ${this.renderPageControls()}
             </div>
           </div>
           <div class="canvas-split-right">
@@ -348,67 +320,6 @@
       `
     }
 
-    // 选择控件进行编辑
-    selectControlForEdit(ctrlId) {
-      const page = this.getCurrentPage()
-      if (!page) return
-      const ctrl = page.controls.find(c => c.id === ctrlId)
-      if (!ctrl) return
-
-      const def = this.controls.get(ctrl.controlType)
-      if (!def) return
-
-      // 加载配置表单
-      const area = document.getElementById('controlConfigArea')
-      if (!area) return
-
-      // 切换到该控件类型
-      const select = document.getElementById('controlTypeSelect')
-      if (select) {
-        select.value = ctrl.controlType
-      }
-
-      // 加载配置
-      area.innerHTML = ''
-      const form = def.getConfigForm(ctrl.config, (newConfig) => {
-        console.log('Updated config:', newConfig)
-        ctrl.config = { ...ctrl.config, ...newConfig }
-        this.saveConfig()
-        this.renderContent()
-      })
-      area.appendChild(form)
-
-      // 显示编辑按钮
-      let btnArea = document.getElementById('editControlBtns')
-      if (!btnArea) {
-        btnArea = document.createElement('div')
-        btnArea.id = 'editControlBtns'
-        btnArea.style.marginTop = '10px'
-        area.parentNode.appendChild(btnArea)
-      }
-      btnArea.innerHTML = `
-        <button id="btnUpdateControl" style="flex:1;padding:12px;background:#22c55e;color:white;border:none;border-radius:6px;cursor:pointer;font-size:14px;">✅ 更新控件</button>
-        <button id="btnDeleteControl" style="flex:1;padding:12px;background:#dc3545;color:white;border:none;border-radius:6px;cursor:pointer;font-size:14px;margin-left:8px;">🗑️ 删除</button>
-      `
-      btnArea.style.display = 'flex'
-
-      document.getElementById('btnUpdateControl').onclick = () => {
-        const inputs = document.querySelectorAll('#controlConfigArea input:not([id="saveConfigBtn"]), #controlConfigArea select')
-        const newConfig = { ...ctrl.config }
-        inputs.forEach(input => {
-          const key = input.id.replace(/^[a-zA-Z]+/, '').toLowerCase()
-          if (key) newConfig[key] = input.type === 'number' ? parseFloat(input.value) : input.value
-        })
-        ctrl.config = newConfig
-        this.saveConfig()
-        this.renderContent()
-      }
-
-      document.getElementById('btnDeleteControl').onclick = () => {
-        this.removeControl(ctrlId)
-      }
-    }
-
     // 获取通道显示数据
     getChannelDisplayData() {
       const channels = Object.keys(DeviceManager.channelData)
@@ -422,7 +333,7 @@
     }
 
     // 渲染页面控件
-    renderPageControls(enableClick) {
+    renderPageControls() {
       const page = this.getCurrentPage()
       if (!page || !page.controls.length) {
         return '<div class="empty-tip">暂无控件，点击右侧添加</div>'
@@ -432,8 +343,7 @@
         const def = this.controls.get(ctrl.controlType)
         if (!def) return ''
 
-        const clickAttr = enableClick ? `onclick="App.selectControlForEdit('${ctrl.id}')" style="cursor:pointer;"` : ''
-        return `<div class="control-item" data-control-id="${ctrl.id}" ${clickAttr}><div class="content"></div></div>`
+        return `<div class="control-item" data-control-id="${ctrl.id}"><div class="content"></div></div>`
       }).join('')
     }
 
@@ -701,34 +611,30 @@
       if (btnAddControl) {
         btnAddControl.addEventListener('click', () => {
           const type = document.getElementById('controlTypeSelect').value
-          // 优先使用已保存的配置，否则从表单提取
-          let config = this.savedControlConfig || {}
-          if (Object.keys(config).length === 0) {
-            const inputs = document.querySelectorAll('#controlConfigArea input:not([id="saveConfigBtn"]), #controlConfigArea select')
-            config = {}
-            inputs.forEach(input => {
-              const key = input.id.replace(/^[a-zA-Z]+/, '').toLowerCase()
-              if (key) config[key] = input.type === 'number' ? parseFloat(input.value) : input.value
-            })
+          const inputs = document.querySelectorAll('#controlConfigArea input, #controlConfigArea select')
+          const config = {}
+          inputs.forEach(input => {
+            const key = input.id.replace(/^[a-zA-Z]+/, '').toLowerCase()
+            if (key) config[key] = input.type === 'number' ? parseFloat(input.value) : input.value
+          })
+          // 如果表单中没有通道字段，尝试从表单输入框中查找（如 gaugeChannel, numChannel 等）
+          const channelInput = document.querySelector('#controlConfigArea input[id$="Channel"]')
+          if (channelInput && channelInput.value) {
+            config.channel = channelInput.value
           }
           console.log('Adding control:', type, config)
-          this.savedControlConfig = null  // 添加后清除保存的配置
           this.addControl(type, config)
         })
 
-        // 控件类型切换时清除保存的配置
+        // 控件类型切换
         const select = document.getElementById('controlTypeSelect')
         if (select) {
           select.addEventListener('change', () => {
-            this.savedControlConfig = null
             const def = this.controls.get(select.value)
             const area = document.getElementById('controlConfigArea')
             if (def && def.getConfigForm) {
+              const form = def.getConfigForm({}, () => {})
               area.innerHTML = ''
-              const form = def.getConfigForm({}, (config) => {
-                console.log('Saved config:', config)
-                this.savedControlConfig = config
-              })
               area.appendChild(form)
             }
           })
@@ -738,6 +644,9 @@
 
       // 渲染控件
       this.renderControls()
+
+      // 绑定右键菜单
+      this.bindContextMenu()
 
       // 导入控件
       const btnImportControl = document.getElementById('btnImportControl')
@@ -944,17 +853,35 @@
       // 保存到localStorage
       this.saveConfigToStorage(name, desc, data)
 
-      // 导出到文件
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = name + '.json'
-      a.click()
-      URL.revokeObjectURL(url)
+      // 尝试使用 PakePlus API 保存到下载目录
+      this.saveToDownloads(name + '.json', JSON.stringify(data, null, 2))
+        .then(() => {
+          this.showSuccessDialog('保存成功', '配置已保存到下载目录')
+        })
+        .catch(() => {
+          // 如果 PakePlus API 不可用，回退到浏览器下载方式
+          const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+          const url = URL.createObjectURL(blob)
+          const a = document.createElement('a')
+          a.href = url
+          a.download = name + '.json'
+          a.click()
+          URL.revokeObjectURL(url)
+          this.showSuccessDialog('保存成功', '配置已保存并导出')
+        })
 
-      this.showSuccessDialog('保存成功', '配置已保存并导出')
       this.renderContent()
+    }
+
+    // 使用 PakePlus API 保存文件到应用程序目录（EXE所在文件夹）
+    async saveToDownloads(filename, content) {
+      if (window.__TAURI__ && window.__TAURI__.fs) {
+        const { writeTextFile } = window.__TAURI__.fs
+        // 直接写入应用程序目录，不指定 baseDir
+        await writeTextFile(filename, content)
+      } else {
+        throw new Error('PakePlus API 不可用')
+      }
     }
 
     // 导入配置文件
