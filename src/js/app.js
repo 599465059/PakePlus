@@ -22,7 +22,8 @@
     '添加控件': '➕',
     '导入控件': '📥',
     '数据查看': '📡',
-    '配置管理': '⚙️'
+    '配置管理': '⚙️',
+    '窗口管理': '🪟'
   }
 
   // 默认菜单配置
@@ -30,8 +31,194 @@
     { id: 'page', name: '页面管理', icon: '📋', items: ['页面管理'] },
     { id: 'control', name: '控件管理', icon: '📦', items: ['添加控件', '导入控件'] },
     { id: 'labview', name: 'LabVIEW', icon: '📡', items: ['数据查看'] },
+    { id: 'window', name: '窗口', icon: '🪟', items: ['窗口管理'] },
     { id: 'system', name: '系统', icon: '⚙️', items: ['配置管理'] }
   ]
+
+  // 窗口管理器 - 使用Tauri Event事件系统
+  const WindowManager = {
+    windows: new Map(),
+    windowCounter: 0,
+
+    // 检查是否在Tauri环境中
+    isTauri() {
+      try {
+        return !!(window.__TAURI__?.webviewWindow?.WebviewWindow)
+      } catch(e) {
+        return false
+      }
+    },
+
+    // 获取Tauri API
+    getTauriAPI() {
+      try {
+        if (window.__TAURI__?.webviewWindow?.WebviewWindow) {
+          return {
+            WebviewWindow: window.__TAURI__.webviewWindow.WebviewWindow,
+            emit: window.__TAURI__.event?.emit || null,
+            listen: window.__TAURI__.event?.listen || null
+          }
+        }
+      } catch(e) {
+        console.warn('获取Tauri API失败:', e)
+      }
+      return { WebviewWindow: null, emit: null, listen: null }
+    },
+
+    // 降级方案：使用原生window.open在外部浏览器打开
+    openWindowFallback(config) {
+      const url = config.url || 'index.html'
+      const width = config.width || 800
+      const height = config.height || 600
+      const title = config.title || '新窗口'
+
+      // 在外部浏览器中打开
+      const newWindow = window.open(url, '_blank', 
+        `width=${width},height=${height},location=yes,menubar=yes,toolbar=yes`)
+
+      if (newWindow) {
+        console.log('已通过外部浏览器打开:', url)
+        return 'browser_window_' + Date.now()
+      } else {
+        alert('无法打开新窗口，请检查浏览器弹出窗口设置')
+        return null
+      }
+    },
+
+    // 打开新窗口（官方示例写法）
+    async openWindow(config) {
+      const api = this.getTauriAPI()
+      const WebviewWindow = api.WebviewWindow
+
+      // 如果Tauri API不可用，使用降级方案
+      if (!WebviewWindow) {
+        console.warn('Tauri WebviewWindow API不可用，使用降级方案')
+        return this.openWindowFallback(config)
+      }
+
+      const label = 'window_' + (++this.windowCounter) + '_' + Date.now()
+      const url = config.url || 'index.html'
+      const title = config.title || '新窗口'
+      const width = config.width || 800
+      const height = config.height || 600
+      const icon = config.icon || null  // 可选：图标路径
+
+      // 使用官方示例写法
+      const webview = new WebviewWindow(label, {
+        url: url,
+        title: title,
+        width: width,
+        height: height,
+        center: true,
+        resizable: true,
+        focus: true,
+        alwaysOnTop: false,
+        transparent: false,
+        visible: true
+      })
+
+      // 监听创建成功（官方示例）
+      webview.once('tauri://created', async () => {
+        console.log('窗口创建成功:', label)
+        
+        // 如果指定了图标，设置窗口图标
+        if (icon && webview.setIcon) {
+          try {
+            await webview.setIcon(icon)
+            console.log('窗口图标设置成功:', icon)
+          } catch (e) {
+            console.warn('设置窗口图标失败:', e)
+          }
+        }
+        
+        // 存储窗口引用
+        this.windows.set(label, {
+          webview: webview,
+          config: config,
+          label: label,
+          createdAt: Date.now()
+        })
+      })
+
+      // 监听创建失败（官方示例）
+      webview.once('tauri://error', (e) => {
+        console.error('窗口创建失败:', e)
+        alert('创建窗口失败: ' + (e.message || '未知错误'))
+      })
+
+      // 监听窗口关闭
+      webview.once('tauri://destroyed', () => {
+        this.windows.delete(label)
+        console.log(`窗口 ${label} 已关闭`)
+      })
+
+      console.log(`窗口 ${label} 已创建: ${title}`)
+      return label
+    },
+
+    // 发送消息到所有窗口
+    async broadcast(eventName, data) {
+      const api = this.getTauriAPI()
+      if (api.emit) {
+        try {
+          await api.emit(eventName, data)
+          console.log(`广播消息 ${eventName}:`, data)
+        } catch (e) {
+          console.error('广播消息失败:', e)
+        }
+      }
+    },
+
+    // 监听消息
+    async listen(eventName, callback) {
+      const api = this.getTauriAPI()
+      if (api.listen) {
+        const unlisten = await api.listen(eventName, (event) => {
+          callback(event.payload)
+        })
+        return unlisten
+      }
+      return () => {}
+    },
+
+    // 获取所有窗口列表
+    getWindowList() {
+      const list = []
+      this.windows.forEach((win, label) => {
+        list.push({
+          label: label,
+          title: win.config.title || '未命名',
+          url: win.config.url || '',
+          createdAt: win.createdAt
+        })
+      })
+      return list
+    },
+
+    // 关闭指定窗口
+    async closeWindow(label) {
+      const win = this.windows.get(label)
+      if (win && win.webview) {
+        try {
+          await win.webview.close()
+          this.windows.delete(label)
+          return true
+        } catch (e) {
+          console.error('关闭窗口失败:', e)
+          return false
+        }
+      }
+      return false
+    },
+
+    // 关闭所有窗口
+    async closeAll() {
+      const labels = Array.from(this.windows.keys())
+      for (const label of labels) {
+        await this.closeWindow(label)
+      }
+    }
+  }
 
   // 主应用类
   class App {
@@ -44,6 +231,7 @@
       this.currentMenu = null
       this.dataRefreshInterval = null
       this.selectedConfigName = null  // 当前选中的配置
+      this.windowManager = WindowManager  // 窗口管理器
     }
 
     async init() {
@@ -375,6 +563,9 @@
           break
         case '数据查看':
           html = this.renderLabviewData()
+          break
+        case '窗口管理':
+          html = this.renderWindowManage()
           break
         case '配置管理':
           html = await this.renderConfigManage()
@@ -740,6 +931,83 @@
       `
     }
 
+    // 渲染窗口管理
+    renderWindowManage() {
+      const isTauri = this.windowManager.isTauri()
+      return `
+        <div class="panel-split-three">
+          <div class="split-section">
+            <div class="panel-title">🪟 打开新窗口</div>
+            <div style="padding:16px;">
+              <div class="form-field">
+                <label>窗口标题</label>
+                <input id="windowTitle" placeholder="请输入窗口标题" value="新窗口">
+              </div>
+              <div class="form-field">
+                <label>窗口URL</label>
+                <input id="windowUrl" placeholder="如: index.html 或 http://example.com" value="index.html">
+              </div>
+              <div class="form-field">
+                <label>图标路径（可选）</label>
+                <input id="windowIcon" placeholder="如: /tauri/icon.png 或图片文件路径" value="">
+              </div>
+              <div style="display:flex;gap:8px;">
+                <div class="form-field" style="flex:1;">
+                  <label>宽度</label>
+                  <input type="number" id="windowWidth" value="800" min="400" max="1920">
+                </div>
+                <div class="form-field" style="flex:1;">
+                  <label>高度</label>
+                  <input type="number" id="windowHeight" value="600" min="300" max="1080">
+                </div>
+              </div>
+              <button id="btnOpenWindow" class="btn-primary" style="width:100%;margin-top:16px;padding:14px;background:#22c55e;color:white;border:none;border-radius:8px;cursor:pointer;font-size:15px;font-weight:500;">
+                🚀 打开新窗口
+              </button>
+              <div id="windowStatus" style="margin-top:12px;font-size:12px;color:#5a6a7a;"></div>
+            </div>
+          </div>
+          <div class="split-section">
+            <div class="panel-title">📡 窗口通信测试</div>
+            <div style="padding:16px;">
+              <div class="form-field">
+                <label>发送消息事件名</label>
+                <input id="eventName" placeholder="如: test-event" value="test-event">
+              </div>
+              <div class="form-field">
+                <label>消息内容 (JSON)</label>
+                <textarea id="eventData" style="width:100%;height:80px;padding:10px;border:1px solid #dce5ec;border-radius:6px;font-size:14px;resize:vertical;" placeholder='{"message": "hello"}'>{"message": "hello"}</textarea>
+              </div>
+              <button id="btnBroadcast" class="btn-primary" style="width:100%;margin-top:8px;padding:10px;background:#2c8fbb;color:white;border:none;border-radius:6px;cursor:pointer;">
+                📢 广播到所有窗口
+              </button>
+              <div style="margin-top:16px;">
+                <div style="font-size:13px;font-weight:500;color:#2c3e50;margin-bottom:8px;">接收的消息：</div>
+                <div id="receivedMessages" style="height:150px;overflow-y:auto;background:#f8fafc;border:1px solid #e2edf2;border-radius:6px;padding:8px;font-size:12px;font-family:monospace;">
+                  <div class="empty-tip" style="font-size:11px;">暂无接收消息</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="split-section">
+            <div class="panel-title">📋 已打开窗口</div>
+            <div id="windowListPanel" style="padding:12px;height:400px;overflow-y:auto;">
+              <div class="empty-tip">暂无打开的窗口</div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:12px;padding:12px;background:#f0f7fc;border-radius:8px;font-size:12px;color:#5a6a7a;">
+          <div style="font-weight:500;margin-bottom:4px;">💡 使用说明：</div>
+          <div>• 窗口URL支持本地文件（如 index.html）或网络地址（如 https://example.com）</div>
+          <div>• 打开的窗口与主窗口之间可以通过 Tauri Event 事件系统通信</div>
+          <div>• 所有打开的窗口共享同一个应用的数据存储空间</div>
+          <div style="margin-top:8px;color:${isTauri ? '#22c55e' : '#dc3545'}">
+            ${isTauri ? '✅ 当前运行环境支持窗口功能' : '⚠️ 当前不在Tauri环境中，无法打开新窗口'}
+          </div>
+        </div>
+      `
+    }
+
     // 设为默认配置
     async setDefaultConfig(name) {
       if (window.FileSystem) {
@@ -1090,6 +1358,143 @@
         this.dataRefreshInterval = setInterval(() => {
           this.updateLabviewDataPanel()
         }, 100)
+      }
+
+      // ==================== 窗口管理相关事件 ====================
+
+      // 打开新窗口
+      const btnOpenWindow = document.getElementById('btnOpenWindow')
+      if (btnOpenWindow) {
+        btnOpenWindow.addEventListener('click', async () => {
+          const title = document.getElementById('windowTitle').value || '新窗口'
+          const url = document.getElementById('windowUrl').value || 'index.html'
+          const icon = document.getElementById('windowIcon').value || null
+          const width = parseInt(document.getElementById('windowWidth').value) || 800
+          const height = parseInt(document.getElementById('windowHeight').value) || 600
+
+          const windowStatus = document.getElementById('windowStatus')
+          if (windowStatus) {
+            windowStatus.innerHTML = '<span style="color:#2c8fbb;">正在打开窗口...</span>'
+          }
+
+          const label = await this.windowManager.openWindow({ title, url, icon, width, height })
+
+          if (label) {
+            if (windowStatus) {
+              windowStatus.innerHTML = `<span style="color:#22c55e;">✅ 窗口已打开: ${label}</span>`
+            }
+            this.updateWindowList()
+          } else {
+            if (windowStatus) {
+              windowStatus.innerHTML = '<span style="color:#dc3545;">❌ 打开窗口失败</span>'
+            }
+          }
+        })
+      }
+
+      // 广播消息到所有窗口
+      const btnBroadcast = document.getElementById('btnBroadcast')
+      if (btnBroadcast) {
+        btnBroadcast.addEventListener('click', async () => {
+          const eventName = document.getElementById('eventName').value || 'test-event'
+          const eventDataStr = document.getElementById('eventData').value || '{}'
+
+          try {
+            const eventData = JSON.parse(eventDataStr)
+            await this.windowManager.broadcast(eventName, eventData)
+            this.showSuccessDialog('广播成功', `事件 "${eventName}" 已发送到所有窗口`)
+          } catch (e) {
+            alert('JSON格式错误: ' + e.message)
+          }
+        })
+      }
+
+      // 监听接收消息
+      if (this.currentMenu === '窗口管理') {
+        // 设置消息监听
+        this.setupWindowMessageListener()
+      }
+
+      // 窗口管理界面 - 定时更新窗口列表
+      if (this.currentMenu === '窗口管理') {
+        this.updateWindowList()
+        // 启动定时刷新窗口列表
+        if (!this.windowListInterval) {
+          this.windowListInterval = setInterval(() => {
+            if (this.currentMenu === '窗口管理') {
+              this.updateWindowList()
+            }
+          }, 2000)
+        }
+      } else {
+        // 离开窗口管理界面时清除定时器
+        if (this.windowListInterval) {
+          clearInterval(this.windowListInterval)
+          this.windowListInterval = null
+        }
+      }
+    }
+
+    // 更新窗口列表显示
+    updateWindowList() {
+      const panel = document.getElementById('windowListPanel')
+      if (!panel) return
+
+      const windows = this.windowManager.getWindowList()
+
+      if (windows.length === 0) {
+        panel.innerHTML = '<div class="empty-tip">暂无打开的窗口</div>'
+        return
+      }
+
+      panel.innerHTML = windows.map(win => {
+        const createdTime = new Date(win.createdAt).toLocaleTimeString()
+        return `
+          <div style="padding:12px;margin-bottom:8px;background:white;border:1px solid #e2edf2;border-radius:8px;">
+            <div style="font-weight:500;color:#2c3e50;margin-bottom:4px;">${win.title}</div>
+            <div style="font-size:12px;color:#5a6a7a;margin-bottom:8px;">标签: ${win.label}</div>
+            <div style="font-size:11px;color:#94a3b8;margin-bottom:8px;">URL: ${win.url}</div>
+            <div style="font-size:11px;color:#94a3b8;margin-bottom:8px;">打开时间: ${createdTime}</div>
+            <button style="padding:6px 12px;background:#dc3545;color:white;border:none;border-radius:4px;cursor:pointer;font-size:12px;" onclick="App.closeWindow('${win.label}')">关闭窗口</button>
+          </div>
+        `
+      }).join('')
+    }
+
+    // 设置窗口消息监听
+    setupWindowMessageListener() {
+      if (this.messageListenerSetup) return
+
+      const eventName = document.getElementById('eventName').value || 'test-event'
+      const receivedPanel = document.getElementById('receivedMessages')
+      if (!receivedPanel) return
+
+      this.windowManager.listen(eventName, (data) => {
+        const msgDiv = document.createElement('div')
+        msgDiv.style.cssText = 'padding:6px 8px;margin-bottom:4px;background:white;border-radius:4px;font-size:11px;'
+        msgDiv.innerHTML = `
+          <div style="color:#94a3b8;">${eventName}</div>
+          <div style="color:#2c3e50;font-family:monospace;">${JSON.stringify(data)}</div>
+        `
+        receivedPanel.insertBefore(msgDiv, receivedPanel.firstChild)
+
+        // 限制显示数量
+        while (receivedPanel.children.length > 20) {
+          receivedPanel.removeChild(receivedPanel.lastChild)
+        }
+      })
+
+      this.messageListenerSetup = true
+    }
+
+    // 关闭指定窗口
+    async closeWindow(label) {
+      const success = await this.windowManager.closeWindow(label)
+      if (success) {
+        this.showSuccessDialog('关闭成功', `窗口 ${label} 已关闭`)
+        this.updateWindowList()
+      } else {
+        this.showSuccessDialog('关闭失败', `无法关闭窗口 ${label}`)
       }
     }
 
