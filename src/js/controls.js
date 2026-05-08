@@ -69,19 +69,7 @@
           <label>单位</label>
           <input id="gaugeUnit" value="${defaultConfig.unit || ''}" placeholder="如: V, °C">
         </div>
-        <button id="saveConfigBtn" style="width:100%;margin-top:10px;padding:10px;background:#2c8fbb;color:white;border:none;border-radius:6px;cursor:pointer;">保存配置</button>
       `
-      div.querySelector('#saveConfigBtn').onclick = () => {
-        const config = {
-          title: div.querySelector('#gaugeTitle').value,
-          channel: div.querySelector('#gaugeChannel').value,
-          min: parseFloat(div.querySelector('#gaugeMin').value),
-          max: parseFloat(div.querySelector('#gaugeMax').value),
-          value: parseFloat(div.querySelector('#gaugeValue').value),
-          unit: div.querySelector('#gaugeUnit').value
-        }
-        if (onSave) onSave(config)
-      }
       return div
     },
     getContextMenuItems(config) {
@@ -135,17 +123,7 @@
           <label>单位</label>
           <input id="numUnit" value="${defaultConfig.unit || ''}">
         </div>
-        <button id="saveConfigBtn" style="width:100%;margin-top:10px;padding:10px;background:#2c8fbb;color:white;border:none;border-radius:6px;cursor:pointer;">保存配置</button>
       `
-      div.querySelector('#saveConfigBtn').onclick = () => {
-        const config = {
-          label: div.querySelector('#numLabel').value,
-          channel: div.querySelector('#numChannel').value,
-          value: parseFloat(div.querySelector('#numValue').value),
-          unit: div.querySelector('#numUnit').value
-        }
-        if (onSave) onSave(config)
-      }
       return div
     },
     getContextMenuItems(config) {
@@ -200,16 +178,7 @@
             <option value="false" ${defaultConfig.value === false ? 'selected' : ''}>灭</option>
           </select>
         </div>
-        <button id="saveConfigBtn" style="width:100%;margin-top:10px;padding:10px;background:#2c8fbb;color:white;border:none;border-radius:6px;cursor:pointer;">保存配置</button>
       `
-      div.querySelector('#saveConfigBtn').onclick = () => {
-        const config = {
-          label: div.querySelector('#indLabel').value,
-          channel: div.querySelector('#indChannel').value,
-          value: div.querySelector('#indValue').value === 'true'
-        }
-        if (onSave) onSave(config)
-      }
       return div
     },
     getContextMenuItems(config) {
@@ -278,18 +247,7 @@
           <label>默认值</label>
           <input type="number" id="progValue" value="${defaultConfig.value || 50}">
         </div>
-        <button id="saveConfigBtn" style="width:100%;margin-top:10px;padding:10px;background:#2c8fbb;color:white;border:none;border-radius:6px;cursor:pointer;">保存配置</button>
       `
-      div.querySelector('#saveConfigBtn').onclick = () => {
-        const config = {
-          label: div.querySelector('#progLabel').value,
-          channel: div.querySelector('#progChannel').value,
-          min: parseFloat(div.querySelector('#progMin').value),
-          max: parseFloat(div.querySelector('#progMax').value),
-          value: parseFloat(div.querySelector('#progValue').value)
-        }
-        if (onSave) onSave(config)
-      }
       return div
     },
     getContextMenuItems(config) {
@@ -363,19 +321,7 @@
           <label>步长</label>
           <input type="number" id="sliderStep" value="${defaultConfig.step || 1}">
         </div>
-        <button id="saveConfigBtn" style="width:100%;margin-top:10px;padding:10px;background:#2c8fbb;color:white;border:none;border-radius:6px;cursor:pointer;">保存配置</button>
       `
-      div.querySelector('#saveConfigBtn').onclick = () => {
-        const config = {
-          label: div.querySelector('#sliderLabel').value,
-          channel: div.querySelector('#sliderChannel').value,
-          min: parseFloat(div.querySelector('#sliderMin').value),
-          max: parseFloat(div.querySelector('#sliderMax').value),
-          value: parseFloat(div.querySelector('#sliderValue').value),
-          step: parseFloat(div.querySelector('#sliderStep').value)
-        }
-        if (onSave) onSave(config)
-      }
       return div
     },
     getContextMenuItems(config) {
@@ -441,16 +387,7 @@
           <label>背景颜色</label>
           <input id="btnBgColor" type="color" value="${defaultConfig.bgColor || '#2c8fbb'}">
         </div>
-        <button id="saveConfigBtn" style="width:100%;margin-top:10px;padding:10px;background:#2c8fbb;color:white;border:none;border-radius:6px;cursor:pointer;">保存配置</button>
       `
-      div.querySelector('#saveConfigBtn').onclick = () => {
-        const config = {
-          text: div.querySelector('#btnText').value,
-          channel: div.querySelector('#btnChannel').value,
-          bgColor: div.querySelector('#btnBgColor').value
-        }
-        if (onSave) onSave(config)
-      }
       return div
     },
     getContextMenuItems(config) {
@@ -515,16 +452,7 @@
             <option value="false" ${!defaultConfig.value ? 'selected' : ''}>关</option>
           </select>
         </div>
-        <button id="saveConfigBtn" style="width:100%;margin-top:10px;padding:10px;background:#2c8fbb;color:white;border:none;border-radius:6px;cursor:pointer;">保存配置</button>
       `
-      div.querySelector('#saveConfigBtn').onclick = () => {
-        const config = {
-          label: div.querySelector('#swLabel').value,
-          channel: div.querySelector('#swChannel').value,
-          value: div.querySelector('#swValue').value === 'true'
-        }
-        if (onSave) onSave(config)
-      }
       return div
     },
     getContextMenuItems(config) {
@@ -582,16 +510,7 @@
           <label>绑定通道（发送数据）</label>
           <input id="inpChannel" value="${defaultConfig.channel || ''}" placeholder="如: 输入值">
         </div>
-        <button id="saveConfigBtn" style="width:100%;margin-top:10px;padding:10px;background:#2c8fbb;color:white;border:none;border-radius:6px;cursor:pointer;">保存配置</button>
       `
-      div.querySelector('#saveConfigBtn').onclick = () => {
-        const config = {
-          placeholder: div.querySelector('#inpPlaceholder').value,
-          value: div.querySelector('#inpValue').value,
-          channel: div.querySelector('#inpChannel').value
-        }
-        if (onSave) onSave(config)
-      }
       return div
     },
     getContextMenuItems(config) {
