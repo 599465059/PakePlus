@@ -1,26 +1,55 @@
-window.addEventListener("DOMContentLoaded",()=>{const t=document.createElement("script");t.src="https://www.googletagmanager.com/gtag/js?id=G-W5GKHM0893",t.async=!0,document.head.appendChild(t);const n=document.createElement("script");n.textContent="window.dataLayer = window.dataLayer || [];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());gtag('config', 'G-W5GKHM0893');",document.body.appendChild(n)});// very important, if you don't know what it is, don't touch it
-// 非常重要，不懂代码不要动，这里可以解决80%的问题，也可以生产1000+的bug
-const hookClick = (e) => {
-    const origin = e.target.closest('a')
-    const isBaseTargetBlank = document.querySelector(
-        'head base[target="_blank"]'
-    )
-    console.log('origin', origin, isBaseTargetBlank)
-    if (
-        (origin && origin.href && origin.target === '_blank') ||
-        (origin && origin.href && isBaseTargetBlank)
-    ) {
-        e.preventDefault()
-        console.log('handle origin', origin)
-        location.href = origin.href
-    } else {
-        console.log('not handle origin', origin)
-    }
-}
+window.addEventListener("DOMContentLoaded",()=>{const t=document.createElement("script");t.src="https://www.googletagmanager.com/gtag/js?id=G-W5GKHM0893",t.async=!0,document.head.appendChild(t);const n=document.createElement("script");n.textContent="window.dataLayer = window.dataLayer || [];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());gtag('config', 'G-W5GKHM0893');",document.body.appendChild(n)});<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>测试软件平台</title>
+  <link rel="stylesheet" href="css/main.css">
+  <script src="js/storage.js" onerror="console.error('Failed to load: storage.js')"></script>
+  <script src="js/eventBus.js" onerror="console.error('Failed to load: eventBus.js')"></script>
+  <script src="js/dataParser.js" onerror="console.error('Failed to load: dataParser.js')"></script>
+  <script src="js/device.js" onerror="console.error('Failed to load: device.js')"></script>
+  <script src="js/controls.js" onerror="console.error('Failed to load: controls.js')"></script>
+  <script src="js/app.js" onerror="console.error('Failed to load: app.js')"></script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- 头部 -->
+    <header class="app-header">
+      <div class="wifi-icon" id="wifiIcon" title="点击连接/断开">
+        <svg viewBox="0 0 24 24" width="24" height="24">
+          <path id="wifiPath" fill="#dc3545" d="M12 18c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2zm0-6c3.31 0 6 2.69 6 6h-2c0-2.21-1.79-4-4-4s-4 1.79-4 4H6c0-3.31 2.69-6 6-6zm0-4c4.97 0 9 4.03 9 9h-2c0-3.87-3.13-7-7-7s-7 3.13-7 7H3c0-4.97 4.03-9 9-9z"/>
+        </svg>
+      </div>
+      <div class="logo" id="appTitle">⚙️ 测试软件平台</div>
+      <div class="page-tabs" id="pageTabs"></div>
+    </header>
 
-window.open = function (url, target, features) {
-    console.log('open', url, target, features)
-    location.href = url
-}
+    <div class="main-content">
+      <!-- 左侧菜单 -->
+      <aside class="sidebar" id="sidebar">
+        <div class="menu-list" id="menuList"></div>
+      </aside>
 
-document.addEventListener('click', hookClick, { capture: true })
+      <!-- 主内容区 -->
+      <main class="main-area">
+        <div class="canvas" id="canvasArea">
+          <div class="canvas-empty">请在左侧选择控件添加到画布</div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- 右键菜单 -->
+  <div class="context-menu" id="contextMenu"></div>
+
+  <!-- 文件上传 -->
+  <input type="file" id="fileImportInput" accept=".js,.json" style="display:none;">
+
+  <script>
+    window.addEventListener('DOMContentLoaded', function() {
+      App.init()
+    })
+  </script>
+</body>
+</html>
